@@ -101,9 +101,8 @@ else
 		jq -r '.packages[0] | "\(.name)\t\(.version)"')
 fi
 
-git switch -c crates
+(git fetch origin crates --depth=1 && git update-ref refs/heads/crates origin/crates) || git branch crates
 
-git checkout main
 cargo package --target-dir "$crate_out_dir" "${cargo_opts[@]}" "${pkg_opts[@]}"
 crate_path="${crate_out_dir%/}/package/${name}-${version}.crate"
 cargo index add --index "$index_root" --index-url "$index_url" --crate "$crate_path"
