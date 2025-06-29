@@ -1,0 +1,66 @@
+name: publish crate
+on:
+  workflow_dispatch:
+    inputs:
+      repository_url:
+        description: 'Full URL of the Git repository containing the crate to published (e.g., https://github.com/user/repo.git)'
+        required: true
+        type: string
+      revision:
+        description: "Optional Git revision (commit hash, branch, or tag) to publish. Defaults to the repository's default branch if omitted."
+        required: false
+        type: string
+      manifest-path:
+        description: "Optional relative path to the crate's `Cargo.toml` within a monorepo or subdirectory (e.g., crates/my_crate). Defaults to repository root."
+        required: false
+        type: string
+      package:
+        description: 'Optional name of the package within the workspace to publish. Useful when the workspace contains multiple packages.'
+        required: false
+        type: string
+  
+
+env:
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  publish:
+    name: Publish crate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - uses: cargo-bins/cargo-binstall@main
+
+      - name: Install dependencies
+        run: |
+          wget http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.0g-2ubuntu4_amd64.deb
+          sudo dpkg -i libssl1.1_1.1.0g-2ubuntu4_amd64.deb
+          cargo binstall cargo-index
+
+      - name: Publish
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+
+          args=(--repository-url "${{ inputs.repository_url }}")
+
+          if [[ -n "${{ inputs.revision }}" ]]; then
+            args+=(--rev "${{ inputs.revision }}")
+          fi
+
+          if [[ -n "${{ inputs.manifest_path }}" ]]; then
+            args+=(--manifest-path "${{ inputs.manifest_path }}")
+          fi
+
+          if [[ -n "${{ inputs.package }}" ]]; then
+            args+=(--package "${{ inputs.package }}")
+          fi
+
+          ./_scripts/publish.sh "${args[@]}"
+
+          git push origin main crates
