@@ -1,4 +1,4 @@
 {
   "dl": "https://raw.githubusercontent.com/ShoyuVanilla/simple-gh-cargo-registry-example/crates/crates/{crate}/{version}/download",
-  "auth-required": true
+  "auth-required": false
 }
